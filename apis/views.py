@@ -5,7 +5,8 @@ from rest_framework.generics import GenericAPIView, ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from .serializers import UserSerializer, LeaderBoardSerializer, ProfileSerializer, QuestionSerializer, HintSerializer, \
     RefferalSerializer, ExeMembersSerializer, UserHintLevelSerializer, AnswerSerializer, UpdateCoinSerializer, \
-    MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer
+    MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer, \
+    UserHintSerializer
 from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel
 
 
@@ -71,6 +72,8 @@ class UserView(GenericAPIView):
             profile = Profile.objects.create(
                 user=user,
                 name=user.name,
+                image="https://firebasestorage.googleapis.com/v0/b/orientationapplication-c8825.appspot.com/o"
+                      "/user_icon.png?alt=media&token=41a41ac2-29de-4be8-bee1-e29eceb4ad34"
             )
             # Create Referral Related To User
             referral = Referral.objects.create(
@@ -211,6 +214,8 @@ class ProfileDetailsView(GenericAPIView):
                 response = UserSerializer(ParadoxUser.objects.get(google_id=google_id), many=False).data
                 response['profile'] = ProfileSerializer(Profile.objects.get(user__google_id__exact=google_id),
                                                         many=False).data
+                response['hint'] = UserHintSerializer(UserHintLevel.objects.get(user__google_id=google_id),
+                                                      many=False).data
                 return Response(response, status.HTTP_200_OK)
         except:
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -326,7 +331,9 @@ class ReferralView(GenericAPIView):
             schema=MessageSerializer,
             examples={
                 "application/json": {
-                    "message": "Referral Successfully Availed"
+                    "message": "Referral Successfully Availed",
+                    "coins": 300,
+                    "referral_availed": True
                 }
             }
         ),
@@ -376,7 +383,9 @@ class ReferralView(GenericAPIView):
             profile_of_refferer = Profile.objects.get(user__google_id=referral.user.google_id)
             profile_of_refferer.coins += 100
             profile_of_refferer.save()
-            return Response({"message": "Referral Successfully Availed"}, status=status.HTTP_200_OK)
+            return Response({"message": "Referral Successfully Availed", "coins": user_profile.coins,
+                             "referral_availed": user_profile.refferral_availed},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -512,7 +521,7 @@ class ExeMemberPositionsView(GenericAPIView):
                         status=status.HTTP_200_OK)
 
 
-class DecreaseCoins(GenericAPIView):
+class AvailHintsView(GenericAPIView):
     """
     Decrease coins of user when they avail Hints
     """
@@ -556,7 +565,11 @@ class CheckAnswerView(GenericAPIView):
             schema=MessageSerializer,
             examples={
                 "application/json": {
-                    "message": "Correct answer"
+                    "message": "Correct answer",
+                    "coins": 1000,
+                    "level": 10,
+                    "hintLevel": 10,
+                    "hintNumber": 0
                 }
             }
         ),
@@ -602,7 +615,14 @@ class CheckAnswerView(GenericAPIView):
                 userHint.hintNumber = 0
                 userHint.save()
                 profile.save()
-                return Response({"message": "Correct answer"}, status=status.HTTP_200_OK)
+                return Response({
+                    "message": "Correct answer",
+                    "coins": profile.coins,
+                    "level": profile.level,
+                    "hintLevel": profile.level,
+                    "hintNumber": userHint.hintNumber
+                },
+                    status=status.HTTP_200_OK)
             else:
                 return Response({"message": "Incorrect answer"}, status=status.HTTP_400_BAD_REQUEST)
         except:

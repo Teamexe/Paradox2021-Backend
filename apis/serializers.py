@@ -27,7 +27,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Questions
-        fields = "__all__"
+        exclude = ["answer"]
 
 
 class HintSerializer(serializers.ModelSerializer):
@@ -180,3 +180,13 @@ class IsUserPresentSerializer(serializers.Serializer):
     Serializer to check user present or not
     """
     userPresent = serializers.BooleanField()
+
+
+class UserHintSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user hint level
+    """
+
+    class Meta:
+        model = UserHintLevel
+        fields = "__all__"
