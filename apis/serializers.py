@@ -57,7 +57,7 @@ class LeaderBoardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        exclude = ['reg_time', 'attempts', 'super_coins']
+        exclude = ['reg_time', 'super_coins']
 
 
 class RefferalSerializer(serializers.Serializer):
@@ -190,3 +190,4 @@ class UserHintSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserHintLevel
         fields = "__all__"
+

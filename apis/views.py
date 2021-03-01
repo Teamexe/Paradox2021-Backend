@@ -1,6 +1,8 @@
+from django.db.models import Sum
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from .serializers import UserSerializer, LeaderBoardSerializer, ProfileSerializer, QuestionSerializer, HintSerializer, \
@@ -72,8 +74,7 @@ class UserView(GenericAPIView):
             profile = Profile.objects.create(
                 user=user,
                 name=user.name,
-                image="https://firebasestorage.googleapis.com/v0/b/orientationapplication-c8825.appspot.com/o"
-                      "/user_icon.png?alt=media&token=41a41ac2-29de-4be8-bee1-e29eceb4ad34"
+                image="https://firebasestorage.googleapis.com/v0/b/orientationapplication-c8825.appspot.com/o/user_icon.png?alt=media&token=41a41ac2-29de-4be8-bee1-e29eceb4ad34"
             )
             # Create Referral Related To User
             referral = Referral.objects.create(
@@ -601,15 +602,17 @@ class CheckAnswerView(GenericAPIView):
         """
         try:
             data = request.data
+            print(data)
             serializer = AnswerSerializer(data=data)
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             validated_data = serializer.validated_data
-            question = Questions.objects.get(level=validated_data)
-            if question.answer == validated_data.answer.strip():
+            question = Questions.objects.get(level=validated_data['level'])
+            if question.answer == validated_data['answer'].strip():
                 profile = Profile.objects.get(user__google_id=validated_data['google_id'])
                 userHint = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
                 profile.coins += 100
+                profile.attempts += 1
                 profile.level += 1
                 userHint.level = profile.level
                 userHint.hintNumber = 0
@@ -625,7 +628,8 @@ class CheckAnswerView(GenericAPIView):
                     status=status.HTTP_200_OK)
             else:
                 return Response({"message": "Incorrect answer"}, status=status.HTTP_400_BAD_REQUEST)
-        except:
+        except Exception as e:
+            print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -734,3 +738,16 @@ class UpdateUserCoinsView(GenericAPIView):
             return Response({"message": "Coins Updated"}, status=status.HTTP_200_OK)
         except:
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+def stats(request):
+    try:
+        return Response({
+            "attempts": Profile.objects.all().aggregate(Sum('attempts')),
+            "total users": len(Profile.objects.all()),
+            "total questions answered": Profile.objects.all().aggregate(Sum('attempts')) - len(Profile.objects.all()),
+            "total questions": len(Questions.objects.all())
+        }, status=status.HTTP_200_OK)
+    except:
+        return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

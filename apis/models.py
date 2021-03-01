@@ -94,7 +94,9 @@ class ExeMembers(models.Model):
     position_choices = (
         ('Developer', 'Developer'),
         ('Mentor', 'Mentor'),
+        ('Alumni', 'Alumni'),
         ('Final year', 'Final year'),
+        ('Pre-Final year', 'Pre-Final year'),
         ('Coordinator', 'Coordinator'),
         ('Executive', 'Executive'),
         ('Volunteer', 'Volunteer')
@@ -104,8 +106,11 @@ class ExeMembers(models.Model):
     position = models.CharField(max_length=255, choices=position_choices)
     category = models.CharField(max_length=255, choices=choices, null=True, blank=True)
     image = models.URLField(max_length=255, null=False, blank=False)
-    githubUrl = models.URLField(max_length=255, null=True, blank=True, unique=True)
-    linkedInUrl = models.URLField(max_length=255, null=True, blank=True, unique=True)
+    githubUrl = models.URLField(max_length=255, null=True, blank=True)
+    linkedInUrl = models.URLField(max_length=255, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 class UserHintLevel(models.Model):
@@ -115,3 +120,5 @@ class UserHintLevel(models.Model):
     user = models.ForeignKey(ParadoxUser, on_delete=models.CASCADE, unique=True, primary_key=True)
     level = models.IntegerField(default=1)
     hintNumber = models.IntegerField(default=0)
+
+
