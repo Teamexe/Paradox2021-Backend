@@ -538,20 +538,24 @@ class AvailHintsView(GenericAPIView):
             "3": 40
         }
         data = request.data
-        serializer = UserSerializer(data=data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        validated_data = serializer.validated_data
-        hintDetails = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
-        userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
-        hintDetails.hintNumber += 1
-        if userProfile.coins >= coins[str(hintDetails.level)]:
-            userProfile.coins = userProfile.coins - coins[str(hintDetails.level)]
+        if len(ParadoxUser.objects.filter(google_id=data['google_id'])) > 0:
+            validated_data = data
+            hintDetails = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
+            userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
+            hintDetails.hintNumber += 1
+            if hintDetails.level > data['level']:
+                return Response({"message": "Updated User Coins."}, status=status.HTTP_200_OK)
+            if userProfile.coins >= coins[str(hintDetails.hintNumber)]:
+                print(coins[str(hintDetails.hintNumber)])
+                userProfile.coins = userProfile.coins - coins[str(hintDetails.hintNumber)]
+            else:
+                return Response({"message": "Not sufficient coins."}, status=status.HTTP_400_BAD_REQUEST)
+            hintDetails.save()
+            userProfile.save()
+            return Response({"message": "Updated User Coins.", "userHintLevel": hintDetails.hintNumber,
+                             "coins": userProfile.coins}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "Not sufficient coins."}, status=status.HTTP_400_BAD_REQUEST)
-        hintDetails.save()
-        userProfile.save()
-        return Response({"message": "Updated User Coins."}, status=status.HTTP_200_OK)
+            Response({"message": "User not Present"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CheckAnswerView(GenericAPIView):
@@ -602,7 +606,6 @@ class CheckAnswerView(GenericAPIView):
         """
         try:
             data = request.data
-            print(data)
             serializer = AnswerSerializer(data=data)
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
