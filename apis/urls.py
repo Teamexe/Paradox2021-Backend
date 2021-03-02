@@ -1,7 +1,7 @@
 from rest_framework.urls import path
 from .views import UserView, LeaderBoardView, ProfileDetailsView, QuestionView, \
     HintsView, ReferralView, ExeMemberView, ExeMemberPositionsView, \
-    UpdateUserCoinsView, UserPresentView, CheckAnswerView, AvailHintsView, stats
+    UpdateUserCoinsView, UserPresentView, CheckAnswerView, AvailHintsView, stats, UpdatePhotoUrl
 
 urlpatterns = [
     path('user/', UserView.as_view()),
@@ -16,5 +16,6 @@ urlpatterns = [
     path('user-present-or-not/<str:google_id>/', UserPresentView.as_view()),
     path('check-answer/', CheckAnswerView.as_view()),
     path('avail-hints/', AvailHintsView.as_view()),
-    path('stats/', stats)
+    path('stats/', stats),
+    path('update-photo/', UpdatePhotoUrl.as_view())
 ]

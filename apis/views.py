@@ -575,6 +575,7 @@ class CheckAnswerView(GenericAPIView):
                     "message": "Correct answer",
                     "coins": 1000,
                     "level": 10,
+                    "attempts": 10,
                     "hintLevel": 10,
                     "hintNumber": 0
                 }
@@ -585,7 +586,8 @@ class CheckAnswerView(GenericAPIView):
             schema=MessageSerializer,
             examples={
                 "application/json": {
-                    "message": "Incorrect answer"
+                    "message": "Incorrect answer",
+                    "attempts": 10
                 }
             }
         ),
@@ -613,11 +615,11 @@ class CheckAnswerView(GenericAPIView):
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             validated_data = serializer.validated_data
             question = Questions.objects.get(level=validated_data['level'])
+            profile = Profile.objects.get(user__google_id=validated_data['google_id'])
+            profile.attempts += 1
             if question.answer == validated_data['answer'].strip():
-                profile = Profile.objects.get(user__google_id=validated_data['google_id'])
                 userHint = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
                 profile.coins += 100
-                profile.attempts += 1
                 profile.level += 1
                 userHint.level = profile.level
                 userHint.hintNumber = 0
@@ -628,11 +630,13 @@ class CheckAnswerView(GenericAPIView):
                     "coins": profile.coins,
                     "level": profile.level,
                     "hintLevel": profile.level,
-                    "hintNumber": userHint.hintNumber
+                    "hintNumber": userHint.hintNumber,
+                    "attempts": profile.attempts
                 },
                     status=status.HTTP_200_OK)
             else:
-                return Response({"message": "Incorrect answer"}, status=status.HTTP_400_BAD_REQUEST)
+                profile.save()
+                return Response({"message": "Incorrect answer", "attempts": profile.attempts}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -687,11 +691,32 @@ class UserPresentView(GenericAPIView):
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class UpdatePhotoUrl(GenericAPIView):
+    def post(self, request):
+        """
+        ## Post Method to update user photo
+        """
+        print("helllo")
+        try:
+            data = request.data
+            if len(ParadoxUser.objects.filter(google_id=data['google_id'])) > 0:
+                validated_data = data
+                google_id = validated_data['google_id']
+                userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
+                userProfile.image = data['image']
+                userProfile.save()
+                return Response({"message": "Profile Photo Updated."}, status=status.HTTP_200_OK)
+            else:
+                Response({"message": "User not Present"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(e)
+            Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class UpdateUserCoinsView(GenericAPIView):
     """
     Update User Coins
     """
-
     serializer_class = UpdateCoinSerializer
     response_schema_dict = {
         "200": openapi.Response(
@@ -746,7 +771,7 @@ class UpdateUserCoinsView(GenericAPIView):
 
 
 @api_view(["GET"])
-@cache_page(300)
+@cache_page(120)
 def stats(request):
     try:
         return Response({

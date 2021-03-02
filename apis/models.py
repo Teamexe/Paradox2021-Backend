@@ -35,9 +35,16 @@ class Questions(models.Model):
     """
     Model for Questions
     """
+
+    categoryChoices = (
+        ('Easy', 'Easy'),
+        ('Medium', 'Medium'),
+        ('Hard', 'Hard'),
+    )
     level = models.IntegerField(primary_key=True, auto_created=True)
     location = models.CharField(max_length=255, blank=False, null=False)
     answer = models.CharField(max_length=255, blank=False, null=False)
+    category = models.CharField(max_length=255, blank=False, null=False, choices=categoryChoices, default='Easy')
 
     def __str__(self):
         return str(self.level)
@@ -120,5 +127,3 @@ class UserHintLevel(models.Model):
     user = models.ForeignKey(ParadoxUser, on_delete=models.CASCADE, unique=True, primary_key=True)
     level = models.IntegerField(default=1)
     hintNumber = models.IntegerField(default=0)
-
-
