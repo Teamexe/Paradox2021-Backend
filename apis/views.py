@@ -1,4 +1,6 @@
 from django.db.models import Sum
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
@@ -744,13 +746,16 @@ class UpdateUserCoinsView(GenericAPIView):
 
 
 @api_view(["GET"])
+@cache_page(300)
 def stats(request):
     try:
         return Response({
-            "attempts": Profile.objects.all().aggregate(Sum('attempts')),
+            "attempts": Profile.objects.all().aggregate(Sum('attempts'))['attempts__sum'],
             "total users": len(Profile.objects.all()),
-            "total questions answered": Profile.objects.all().aggregate(Sum('attempts')) - len(Profile.objects.all()),
+            "total questions answered": Profile.objects.all().aggregate(Sum('level'))['level__sum'] - len(
+                Profile.objects.all()),
             "total questions": len(Questions.objects.all())
         }, status=status.HTTP_200_OK)
-    except:
+    except Exception as e:
+        print(e)
         return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
