@@ -621,6 +621,7 @@ class CheckAnswerView(GenericAPIView):
                 userHint = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
                 profile.coins += 100
                 profile.level += 1
+                profile.score += 10
                 userHint.level = profile.level
                 userHint.hintNumber = 0
                 userHint.save()
