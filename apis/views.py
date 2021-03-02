@@ -1,11 +1,16 @@
+from django.db.models import Sum
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.generics import GenericAPIView, ListAPIView, CreateAPIView
 from rest_framework.response import Response
 from .serializers import UserSerializer, LeaderBoardSerializer, ProfileSerializer, QuestionSerializer, HintSerializer, \
     RefferalSerializer, ExeMembersSerializer, UserHintLevelSerializer, AnswerSerializer, UpdateCoinSerializer, \
-    MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer
+    MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer, \
+    UserHintSerializer
 from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel
 
 
@@ -71,6 +76,7 @@ class UserView(GenericAPIView):
             profile = Profile.objects.create(
                 user=user,
                 name=user.name,
+                image="https://firebasestorage.googleapis.com/v0/b/orientationapplication-c8825.appspot.com/o/user_icon.png?alt=media&token=41a41ac2-29de-4be8-bee1-e29eceb4ad34"
             )
             # Create Referral Related To User
             referral = Referral.objects.create(
@@ -211,6 +217,8 @@ class ProfileDetailsView(GenericAPIView):
                 response = UserSerializer(ParadoxUser.objects.get(google_id=google_id), many=False).data
                 response['profile'] = ProfileSerializer(Profile.objects.get(user__google_id__exact=google_id),
                                                         many=False).data
+                response['hint'] = UserHintSerializer(UserHintLevel.objects.get(user__google_id=google_id),
+                                                      many=False).data
                 return Response(response, status.HTTP_200_OK)
         except:
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -326,7 +334,9 @@ class ReferralView(GenericAPIView):
             schema=MessageSerializer,
             examples={
                 "application/json": {
-                    "message": "Referral Successfully Availed"
+                    "message": "Referral Successfully Availed",
+                    "coins": 300,
+                    "referral_availed": True
                 }
             }
         ),
@@ -376,7 +386,9 @@ class ReferralView(GenericAPIView):
             profile_of_refferer = Profile.objects.get(user__google_id=referral.user.google_id)
             profile_of_refferer.coins += 100
             profile_of_refferer.save()
-            return Response({"message": "Referral Successfully Availed"}, status=status.HTTP_200_OK)
+            return Response({"message": "Referral Successfully Availed", "coins": user_profile.coins,
+                             "referral_availed": user_profile.refferral_availed},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -512,7 +524,7 @@ class ExeMemberPositionsView(GenericAPIView):
                         status=status.HTTP_200_OK)
 
 
-class DecreaseCoins(GenericAPIView):
+class AvailHintsView(GenericAPIView):
     """
     Decrease coins of user when they avail Hints
     """
@@ -528,20 +540,24 @@ class DecreaseCoins(GenericAPIView):
             "3": 40
         }
         data = request.data
-        serializer = UserSerializer(data=data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        validated_data = serializer.validated_data
-        hintDetails = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
-        userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
-        hintDetails.hintNumber += 1
-        if userProfile.coins >= coins[str(hintDetails.level)]:
-            userProfile.coins = userProfile.coins - coins[str(hintDetails.level)]
+        if len(ParadoxUser.objects.filter(google_id=data['google_id'])) > 0:
+            validated_data = data
+            hintDetails = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
+            userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
+            hintDetails.hintNumber += 1
+            if hintDetails.level > data['level']:
+                return Response({"message": "Updated User Coins."}, status=status.HTTP_200_OK)
+            if userProfile.coins >= coins[str(hintDetails.hintNumber)]:
+                print(coins[str(hintDetails.hintNumber)])
+                userProfile.coins = userProfile.coins - coins[str(hintDetails.hintNumber)]
+            else:
+                return Response({"message": "Not sufficient coins."}, status=status.HTTP_400_BAD_REQUEST)
+            hintDetails.save()
+            userProfile.save()
+            return Response({"message": "Updated User Coins.", "userHintLevel": hintDetails.hintNumber,
+                             "coins": userProfile.coins}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "Not sufficient coins."}, status=status.HTTP_400_BAD_REQUEST)
-        hintDetails.save()
-        userProfile.save()
-        return Response({"message": "Updated User Coins."}, status=status.HTTP_200_OK)
+            Response({"message": "User not Present"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class CheckAnswerView(GenericAPIView):
@@ -556,7 +572,11 @@ class CheckAnswerView(GenericAPIView):
             schema=MessageSerializer,
             examples={
                 "application/json": {
-                    "message": "Correct answer"
+                    "message": "Correct answer",
+                    "coins": 1000,
+                    "level": 10,
+                    "hintLevel": 10,
+                    "hintNumber": 0
                 }
             }
         ),
@@ -592,20 +612,29 @@ class CheckAnswerView(GenericAPIView):
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             validated_data = serializer.validated_data
-            question = Questions.objects.get(level=validated_data)
-            if question.answer == validated_data.answer.strip():
+            question = Questions.objects.get(level=validated_data['level'])
+            if question.answer == validated_data['answer'].strip():
                 profile = Profile.objects.get(user__google_id=validated_data['google_id'])
                 userHint = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
                 profile.coins += 100
+                profile.attempts += 1
                 profile.level += 1
                 userHint.level = profile.level
                 userHint.hintNumber = 0
                 userHint.save()
                 profile.save()
-                return Response({"message": "Correct answer"}, status=status.HTTP_200_OK)
+                return Response({
+                    "message": "Correct answer",
+                    "coins": profile.coins,
+                    "level": profile.level,
+                    "hintLevel": profile.level,
+                    "hintNumber": userHint.hintNumber
+                },
+                    status=status.HTTP_200_OK)
             else:
                 return Response({"message": "Incorrect answer"}, status=status.HTTP_400_BAD_REQUEST)
-        except:
+        except Exception as e:
+            print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -714,3 +743,19 @@ class UpdateUserCoinsView(GenericAPIView):
             return Response({"message": "Coins Updated"}, status=status.HTTP_200_OK)
         except:
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+@cache_page(300)
+def stats(request):
+    try:
+        return Response({
+            "attempts": Profile.objects.all().aggregate(Sum('attempts'))['attempts__sum'],
+            "total users": len(Profile.objects.all()),
+            "total questions answered": Profile.objects.all().aggregate(Sum('level'))['level__sum'] - len(
+                Profile.objects.all()),
+            "total questions": len(Questions.objects.all())
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(e)
+        return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
