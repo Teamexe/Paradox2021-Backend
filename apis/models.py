@@ -128,3 +128,16 @@ class UserHintLevel(models.Model):
     user = models.ForeignKey(ParadoxUser, on_delete=models.CASCADE, unique=True, primary_key=True)
     level = models.IntegerField(default=1)
     hintNumber = models.IntegerField(default=0)
+
+
+class ExeGallery(models.Model):
+    """
+    Model for To store links of Exe Images and Videos
+    """
+    choices = (
+        ('Video', 'Video'),
+        ('Image', 'Image'),
+    )
+    url = models.CharField(max_length=256)
+    type = models.CharField(max_length=256, choices=choices)
+    credit = models.CharField(max_length=256)

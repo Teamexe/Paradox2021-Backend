@@ -1,5 +1,4 @@
 from django.db.models import Sum
-from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -10,8 +9,8 @@ from rest_framework.response import Response
 from .serializers import UserSerializer, LeaderBoardSerializer, ProfileSerializer, QuestionSerializer, HintSerializer, \
     RefferalSerializer, ExeMembersSerializer, UserHintLevelSerializer, AnswerSerializer, UpdateCoinSerializer, \
     MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer, \
-    UserHintSerializer
-from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel
+    UserHintSerializer, ExeGallerySerializer
+from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel, ExeGallery
 
 
 class UserView(GenericAPIView):
@@ -394,6 +393,48 @@ class ReferralView(GenericAPIView):
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class ExeGalleryView(ListAPIView):
+    """
+    Exe Gallery View
+    """
+    serializer_class = ExeGallerySerializer
+    queryset = ExeGallery.objects.all()
+
+    response_schema_dict1 = {
+        "200": openapi.Response(
+            description="Exe Gallery List",
+            schema=ExeMembersSerializer,
+            examples={
+                "application/json":
+                    [
+                        {
+                            "id": 1,
+                            "url": "eYusSV8Rlcc",
+                            "type": "Video",
+                            "credit": "Ujjaval Saini",
+                        }
+                    ]
+            }
+        ),
+        "500": openapi.Response(
+            description="Internal Server Error",
+            schema=MessageSerializer,
+            examples={
+                "application/json": {
+                    "message": "Internal Server Error"
+                }
+            }
+        )
+    }
+
+    @swagger_auto_schema(responses=response_schema_dict1)
+    def get(self, request, *args, **kwargs):
+        """
+        ## List Exe Members
+        """
+        return super().get(request, *args, **kwargs)
+
+
 class ExeMemberView(ListAPIView, CreateAPIView):
     """
     Exe Member View
@@ -637,7 +678,8 @@ class CheckAnswerView(GenericAPIView):
                     status=status.HTTP_200_OK)
             else:
                 profile.save()
-                return Response({"message": "Incorrect answer", "attempts": profile.attempts}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Incorrect answer", "attempts": profile.attempts},
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
             return Response({"message": "Internal Server Error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
