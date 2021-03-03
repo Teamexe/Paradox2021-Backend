@@ -95,7 +95,8 @@ class ExeMembers(models.Model):
     choices = (
         ('Full Stack', 'Full Stack'),
         ('Front End', 'Front End'),
-        ('Back End', 'Back End')
+        ('Back End', 'Back End'),
+        ('Logo Designer', 'Logo Designer')
     )
 
     position_choices = (
