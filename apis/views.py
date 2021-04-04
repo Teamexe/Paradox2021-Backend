@@ -810,7 +810,7 @@ class UpdateUserCoinsView(GenericAPIView):
             validated_data = serializer.validated_data
             profile = Profile.objects.get(user__google_id=validated_data['google_id'])
             profile.coins += int(validated_data['coins'])
-            profile.coins = max(500, profile.coins)
+            profile.coins = min(500, profile.coins)
             profile.save()
             return Response({"message": "Coins Updated"}, status=status.HTTP_200_OK)
         except:
