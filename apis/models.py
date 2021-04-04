@@ -35,9 +35,16 @@ class Questions(models.Model):
     """
     Model for Questions
     """
+
+    categoryChoices = (
+        ('Easy', 'Easy'),
+        ('Medium', 'Medium'),
+        ('Hard', 'Hard'),
+    )
     level = models.IntegerField(primary_key=True, auto_created=True)
     location = models.CharField(max_length=255, blank=False, null=False)
     answer = models.CharField(max_length=255, blank=False, null=False)
+    category = models.CharField(max_length=255, blank=False, null=False, choices=categoryChoices, default='Easy')
 
     def __str__(self):
         return str(self.level)
@@ -88,7 +95,8 @@ class ExeMembers(models.Model):
     choices = (
         ('Full Stack', 'Full Stack'),
         ('Front End', 'Front End'),
-        ('Back End', 'Back End')
+        ('Back End', 'Back End'),
+        ('Logo Designer', 'Logo Designer')
     )
 
     position_choices = (
@@ -122,3 +130,14 @@ class UserHintLevel(models.Model):
     hintNumber = models.IntegerField(default=0)
 
 
+class ExeGallery(models.Model):
+    """
+    Model for To store links of Exe Images and Videos
+    """
+    choices = (
+        ('Video', 'Video'),
+        ('Image', 'Image'),
+    )
+    url = models.CharField(max_length=256)
+    type = models.CharField(max_length=256, choices=choices)
+    credit = models.CharField(max_length=256)

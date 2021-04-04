@@ -1,6 +1,6 @@
 import uuid
 from rest_framework import serializers
-from .models import ParadoxUser, Referral, Questions, Hints, Profile, Rules, ExeMembers, UserHintLevel
+from .models import ParadoxUser, Referral, Questions, Hints, Profile, Rules, ExeMembers, UserHintLevel, ExeGallery
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -191,3 +191,12 @@ class UserHintSerializer(serializers.ModelSerializer):
         model = UserHintLevel
         fields = "__all__"
 
+
+class ExeGallerySerializer(serializers.ModelSerializer):
+    """
+    Serializer for user exe gallery level
+    """
+
+    class Meta:
+        model = ExeGallery
+        fields = "__all__"
