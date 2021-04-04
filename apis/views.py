@@ -377,6 +377,7 @@ class ReferralView(GenericAPIView):
             if referral.user.google_id == user_profile.user.google_id:
                 return Response({'message': 'Cannot Avail Referral of yourself.'}, status=status.HTTP_400_BAD_REQUEST)
             user_profile.coins += 100
+            user_profile.coins = max(500, user_profile)
             user_profile.refferral_availed = True
             user_profile.save()
             referral = Referral.objects.get(ref_code=serializer.validated_data['ref_code'])
@@ -384,6 +385,7 @@ class ReferralView(GenericAPIView):
             referral.save()
             profile_of_refferer = Profile.objects.get(user__google_id=referral.user.google_id)
             profile_of_refferer.coins += 100
+            profile_of_refferer.coins = max(profile_of_refferer.coins, 500)
             profile_of_refferer.save()
             return Response({"message": "Referral Successfully Availed", "coins": user_profile.coins,
                              "referral_availed": user_profile.refferral_availed},
@@ -663,6 +665,7 @@ class CheckAnswerView(GenericAPIView):
                 profile.coins += 100
                 profile.level += 1
                 profile.score += 10
+                profile.coins = max(profile.coins, 500)
                 userHint.level = profile.level
                 userHint.hintNumber = 0
                 userHint.save()
@@ -745,7 +748,7 @@ class UpdatePhotoUrl(GenericAPIView):
             if len(ParadoxUser.objects.filter(google_id=data['google_id'])) > 0:
                 validated_data = data
                 google_id = validated_data['google_id']
-                userProfile = Profile.objects.get(user__google_id=validated_data['google_id'])
+                userProfile = Profile.objects.get(user__google_id=google_id)
                 userProfile.image = data['image']
                 userProfile.save()
                 return Response({"message": "Profile Photo Updated."}, status=status.HTTP_200_OK)
@@ -807,6 +810,7 @@ class UpdateUserCoinsView(GenericAPIView):
             validated_data = serializer.validated_data
             profile = Profile.objects.get(user__google_id=validated_data['google_id'])
             profile.coins += int(validated_data['coins'])
+            profile.coins = max(500, profile.coins)
             profile.save()
             return Response({"message": "Coins Updated"}, status=status.HTTP_200_OK)
         except:
