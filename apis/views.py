@@ -377,7 +377,7 @@ class ReferralView(GenericAPIView):
             if referral.user.google_id == user_profile.user.google_id:
                 return Response({'message': 'Cannot Avail Referral of yourself.'}, status=status.HTTP_400_BAD_REQUEST)
             user_profile.coins += 100
-            user_profile.coins = max(500, user_profile)
+            user_profile.coins = min(500, user_profile.coins)
             user_profile.refferral_availed = True
             user_profile.save()
             referral = Referral.objects.get(ref_code=serializer.validated_data['ref_code'])
@@ -385,7 +385,7 @@ class ReferralView(GenericAPIView):
             referral.save()
             profile_of_refferer = Profile.objects.get(user__google_id=referral.user.google_id)
             profile_of_refferer.coins += 100
-            profile_of_refferer.coins = max(profile_of_refferer.coins, 500)
+            profile_of_refferer.coins = min(profile_of_refferer.coins, 500)
             profile_of_refferer.save()
             return Response({"message": "Referral Successfully Availed", "coins": user_profile.coins,
                              "referral_availed": user_profile.refferral_availed},
