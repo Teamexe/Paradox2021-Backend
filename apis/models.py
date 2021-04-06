@@ -141,3 +141,13 @@ class ExeGallery(models.Model):
     url = models.CharField(max_length=256)
     type = models.CharField(max_length=256, choices=choices)
     credit = models.CharField(max_length=256)
+
+
+class Submission(models.Model):
+    """
+    Model to store submission made by users
+    """
+    user = models.ForeignKey(ParadoxUser, on_delete=models.CASCADE)
+    level = models.IntegerField(default=1)
+    answer = models.CharField(max_length=256)
+    time = models.DateTimeField(auto_now_add=True)

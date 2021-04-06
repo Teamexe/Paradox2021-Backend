@@ -10,7 +10,7 @@ from .serializers import UserSerializer, LeaderBoardSerializer, ProfileSerialize
     RefferalSerializer, ExeMembersSerializer, UserHintLevelSerializer, AnswerSerializer, UpdateCoinSerializer, \
     MessageSerializer, UserDetailsSerializer, ExeMembersPositionListSerializer, IsUserPresentSerializer, \
     UserHintSerializer, ExeGallerySerializer
-from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel, ExeGallery
+from .models import Profile, Referral, ParadoxUser, Questions, Hints, ExeMembers, UserHintLevel, ExeGallery, Submission
 
 
 class UserView(GenericAPIView):
@@ -660,7 +660,12 @@ class CheckAnswerView(GenericAPIView):
             question = Questions.objects.get(level=validated_data['level'])
             profile = Profile.objects.get(user__google_id=validated_data['google_id'])
             profile.attempts += 1
-            if question.answer == validated_data['answer'].strip():
+            Submission.objects.create(
+                answer=validated_data['answer'].strip(),
+                level=profile.level,
+                user=profile.user
+            )
+            if question.answer.lower() == validated_data['answer'].strip():
                 userHint = UserHintLevel.objects.get(user__google_id=validated_data['google_id'])
                 profile.coins += 100
                 profile.level += 1

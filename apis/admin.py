@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Questions, Hints, ParadoxUser, Profile, ExeMembers, UserHintLevel, Referral, ExeGallery
+from .models import Questions, Hints, ParadoxUser, Profile, ExeMembers, UserHintLevel, Referral, ExeGallery, Submission
 
 # Register your models here.
 
@@ -11,5 +11,6 @@ admin.site.register([
     ExeMembers,
     UserHintLevel,
     Referral,
-    ExeGallery
+    ExeGallery,
+    Submission
 ])
