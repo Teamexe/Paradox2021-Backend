@@ -670,7 +670,7 @@ class CheckAnswerView(GenericAPIView):
                 profile.coins += 100
                 profile.level += 1
                 profile.score += 10
-                profile.coins = max(profile.coins, 500)
+                profile.coins = min(profile.coins, 500)
                 userHint.level = profile.level
                 userHint.hintNumber = 0
                 userHint.save()
