@@ -39,7 +39,6 @@ And navigate to `http://127.0.0.1:8000/swagger` for detailed and interactive doc
 #### Made By [Mrigank Anand](https://github.com/spiderxm)
 
 
-
 > ### Privacy Policy
     
     Team .EXE built the Paradox by Team .EXE app as a Free app. This SERVICE is provided by Team .EXE at no cost and is intended for use as is.
@@ -100,3 +99,6 @@ And navigate to `http://127.0.0.1:8000/swagger` for detailed and interactive doc
     Contact Us
     
     If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at teamexenith@gmail.com .
+    
+    
+## Made with love by Team .exe
